@@ -1,0 +1,10 @@
+INT 10h: Console screen and text.
+	EAX=Mode:
+		EAX = 13 Print string. 
+			CS+ESI = Pointer to string.
+			EBX = Color.
+		
+
+INT 9h: Wait
+	EBX = Seconds.
+		

@@ -6,6 +6,20 @@
 #define DefaultMappingSeperation 10000
 #define DefaultCharColorStyle 999
 
+//Define interrupt tables
+stef;
+LIDTR IntTable;
+//PRINT STRING 10h
+IntTable[(10*4)+0]=PrintINT;
+IntTable[(10*4)+1]=0;
+IntTable[(10*4)+2]=0;
+IntTable[(10*4)+3]=41;
+//WAIT 9h
+IntTable[(9*4)+0]=WaitINT;
+IntTable[(9*4)+1]=0;
+IntTable[(9*4)+2]=0;
+IntTable[(9*4)+3]=41;
+
 main();
 
 
@@ -13,6 +27,7 @@ main();
 int 1;
 
 char Devices[8];
+int48* ConsoleScreen;
 void main()
 {
 
@@ -42,7 +57,7 @@ void main()
     int48* Speaker = FindDeviceAddress( ExtBus, Devices, 17 );
 
     //Console init
-    int48* ConsoleScreen = FindDeviceAddress( ExtBus, Devices, 11 );
+    ConsoleScreen = FindDeviceAddress( ExtBus, Devices, 11 );
     ConsoleScreen[2041]=1;//clear
     ConsoleScreen[2045]=0;//Reset cursor
     ConsoleScreen[2046]=1;//Enable cursor
@@ -73,7 +88,7 @@ void main()
     }
 
     //bios welcome
-    Print(ConsoleScreen, "BIOS 0.62019 alpha\n\0", DefaultCharColorStyle);
+    Print(ConsoleScreen, "BIOS 0.8219 alpha\n\0", DefaultCharColorStyle);
     Print(ConsoleScreen, "/ALTAER/ \n\0", 118);
     
     Print(ConsoleScreen, "Hold TAB for bios setup\n\0", DefaultCharColorStyle);
@@ -94,11 +109,12 @@ void main()
     Beep(Speaker, 0.1, 1);
     Beep(Speaker, 0.1, 1.5);
     wait(1);
-    Print(ConsoleScreen, "BIOS 0.62019 alpha\n\0", 555);
+    Print(ConsoleScreen, "BIOS 0.8219 alpha\n\0", 555);
     Print(ConsoleScreen, "/ALTAER/ \n\0", 555);
     Print(ConsoleScreen, "Command utility mode\n\0", 999);
     Print(ConsoleScreen, "Enter help for commands\n\n\0", 888);
-    
+
+
     //Command line
     char Command[255];
     while(1==1)
@@ -182,6 +198,26 @@ void main()
     }
 }
 
+
+//INTERRUPTS
+PrintINT: //INT 10
+    if(EAX == 13)//EAX 13:   Write string
+    {   //ESI = String source.
+        int48 Col = EBX;
+        char* INT10_WriteString_Source = ESI;
+        Print(ConsoleScreen, ESI, Col);           
+    }
+IRET;
+
+int48 WaitInt_Time;
+WaitINT:
+
+    OUT 0, EBX;
+    WaitInt_Time = EBX;
+    Wait( WaitInt_Time );
+IRET;
+
+//C Functions
 void CopyBlock( int48* A, int48* B, int48 Bytes )
 {
     ESI = A;
@@ -241,7 +277,7 @@ void Boot( int48* Drive, int48* ConsoleScreen )
     ConsoleScreen[2045]=0;//Reset cursor
     ConsoleScreen[2046]=1;//Enable cursor    
     ConsoleScreen[2042]=000;//BG
-
+    
     JMPF 0,NewAddr;
 }
 
@@ -386,6 +422,7 @@ void Print( int48* Console, char* str, int48 col )
     }    
 }
 
+
 void PrintChar( int48* Console, char str, int48 col )
 {
         if(Console[2045]>1078) //1080
@@ -487,4 +524,4 @@ char* ConsoleRead( int48* Console, int48* Keyboard, int48* Input ) //Input is ou
     }         
 }
 
-
+IntTable:
